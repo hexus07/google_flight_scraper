@@ -2,7 +2,7 @@ import base64
 from typing import Any, List, Optional, TYPE_CHECKING, Literal, Union # for better readability and maintainability
 import  flights_pb2 as PB
 from _gen_airports import Airport
-
+from dataclasses import dataclass
 if TYPE_CHECKING:
     import flights_pb2 as PB
 
@@ -183,3 +183,16 @@ class TFSData:
 
     def __repr__(self) -> str:
         return f"TFSData(flight_data={self.flight_data!r}, max_stops={self.max_stops!r})"
+
+@dataclass
+class ItinerarySummary:
+    flights: str
+    price: int
+    currency: str
+
+    @classmethod
+    def from_b64(cls, b64_string: str) -> 'ItinerarySummary':
+        raw = base64.b64decode(b64_string)
+        pb = PB.ItinerarySummary()
+        pb.ParseFromString(raw)
+        return cls(pb.flights, pb.price.price / 100, pb.price.currency)

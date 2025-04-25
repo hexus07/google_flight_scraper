@@ -3,17 +3,16 @@
 from typing import List, Literal, Optional, Union
 from selectolax.lexbor import LexborHTMLParser, LexborNode
 
-from dataclass import Flight, Result
+from dataclass import Result
 from filter import TFSData, create_filter
-# from local_playwright import local_playwright_fetch
+from local_playwright import local_playwright_fetch
 from primp import Client
 
 from hashlib import sha256
 from datetime import datetime
 
 from flights_pb_implem import FlightData, Passengers
-
-from decoder import DecodedResult, ResultDecoder # decodoer of the response by kftang
+from decoder import DecodedResult, ResultDecoder, Itinerary, ItinerarySummary, Flight # decodoer of the response by kftang
 import re
 import json
 DataSource = Literal['html', 'js']
@@ -48,7 +47,13 @@ def get_flights_from_filter(
     } 
 
     if mode == 'common':
-        res = fetch(params)
+        try:
+            res = fetch(params)
+        except Exception as e:
+            print(f"Error fetching data: {e}")
+            res = local_playwright_fetch(params)
+    else: # Local mode for testing 
+        res = local_playwright_fetch(params)
 
     try:
         return parse_response(res, data_source, dangerously_allow_looping_last_item=False)
@@ -84,36 +89,37 @@ def parse_response(
         assert match, "No data found in script tag"
         data = json.loads(match.group(1))
         return ResultDecoder.decode(data) if data is not None else None
-    else:   # # HTML parsing
+    else:   # HTML parsing - using local_playwright_fetch
         flights = []
+        
+        parser = LexborHTMLParser(r.text)
+        fl = parser.css_first("div[jsname='IWWDBc']")
 
-        for i, fl in enumerate(parser.css('div[jsname="IWWDBc"], div[jsname="YdtKid"]')):
-            print
-            is_best_flight = i == 0
+        if fl:
+            is_best_flight = True
+            departure_airport = safe(fl.css("ul.Rk10dc li.pIav2d .dPzsIb.AdWm1c   span")[6]).text()[1:-1]
+            arrival_airport = safe(fl.css("ul.Rk10dc li.pIav2d .SWFQlc span")[-1]).text()[1:-1]
+            for item in fl.css("ul.Rk10dc li.pIav2d"):
 
-            for item in fl.css("ul.Rk10dc li")[
-                : (None if dangerously_allow_looping_last_item or i == 0 else -1)
-            ]:
                 # Flight name
-                name = safe(item.css_first("div.sSHqwe.tPgKwe.ogfYpf span")).text(
-                    strip=True
-                )
+                airline_name = safe(item.css_first("span.Xsgmwe")).text()
 
-                # Get departure & arrival time
-                dp_ar_node = item.css("span.mv1WYe div")
-                try:
-                    departure_time = dp_ar_node[0].text(strip=True)
-                    arrival_time = dp_ar_node[1].text(strip=True)
-                except IndexError:
-                    # sometimes this is not present
-                    departure_time = ""
-                    arrival_time = ""
+                # Get departure and arrival times
+                departure_arrival = safe(item.css("div[jsname='bN97Pc']"))
+                year = 2025  
 
-                # Get arrival time ahead
-                time_ahead = safe(item.css_first("span.bOzv6")).text()
+                dt = datetime.strptime(f"{departure_arrival[0].text()} {year}", "%H:%M on %a %d %b %Y")
+                departure_date = [dt.year, dt.month, dt.day]
+                departure_time = [dt.hour, dt.minute]
 
+                ar = datetime.strptime(f"{departure_arrival[1].text()} {year}", "%H:%M on %a %d %b %Y")
+                arrival_date = [ar.year, ar.month, ar.day]
+                arrival_time = [ar.hour, ar.minute]
+            
+                
                 # Get duration
-                duration = safe(item.css_first("li div.Ak5kof div")).text()
+                duration = safe(item.css_first("div.CQYfx")).text().split(": ")
+                travel_time = convert_travel_time_to_minutes(duration[1])
 
                 # Get flight stops
                 stops = safe(item.css_first(".BbR8Ec .ogfYpf")).text()
@@ -122,36 +128,95 @@ def parse_response(
                 delay = safe(item.css_first(".GsCCve")).text() or None
 
                 # Get prices
-                price = safe(item.css_first(".YMlIz.FpEdX")).text() or "0"
-                
-                # Stops formatting
+                price = int(safe(item.css_first(".YMlIz.FpEdX")).text()[1:]) or "0"
+
+                # Get plane
+                plane = safe(item.css(".Xsgmwe")[3]).text()
+    
+                # Get date
+                date = safe(item.css(".S90skc span")[2]).text()
+                # Get emissions
+                emissions = safe(item.css_first(".AdWm1c.lc3qH")).text().split(" ")[0]
+                emissions_per_passenger = safe(item.css_first("li.WtSsrd span.gI4d6d")).text().split(": ")[1]
+                # Get flight number
+
+                flight_number = safe(item.css_first(".Xsgmwe.QS0io")).text().replace('\xa0', '')
+                airline_code, flight_num = flight_number[:2], flight_number[2:]
+
+                # Get class
+                flight_class = safe(item.css_first("span[jsname='Pvlywd']")).text()
+
+                # Get operator
+                operator = safe(item.css_first(".kSwLQc.sSHqwe")).text().split(" ")[4:]
+                operator = " ".join(operator)
+
+                seat_pitch_short = safe(item.css_first("li.WtSsrd")).text()[-6:-1]
+                print(seat_pitch_short)
+                print(operator)
                 try:
                     stops_fmt = 0 if stops == "Nonstop" else int(stops.split(" ", 1)[0])
                 except ValueError:
                     stops_fmt = "Unknown"
 
                 flights.append(
-                    {
-                        "is_best": is_best_flight,
-                        "name": name,
-                        "departure": " ".join(departure_time.split()),
-                        "arrival": " ".join(arrival_time.split()),
-                        "arrival_time_ahead": time_ahead,
-                        "duration": duration,
-                        "stops": stops_fmt,
-                        "delay": delay,
-                        "price": price.replace(",", ""),
-                    }
+                    Itinerary(
+                        airline_code=airline_code,
+                        airline_names=airline_name,
+                        flights=[
+                            Flight(
+                                airline=airline_code,
+                                airline_name=airline_name,
+                                flight_number=flight_num,
+                                operator=operator,
+                                codeshares=None,
+                                aircraft=plane,
+                                departure_airport=departure_airport,
+                                departure_airport_name='Vilnius International Airport',
+                                arrival_airport=arrival_airport,
+                                arrival_airport_name='Josep TarBarcelonradellas a-El Prat Airport',
+                                departure_date=departure_date,
+                                arrival_date=arrival_date,
+                                departure_time=departure_time,
+                                arrival_time=arrival_time,
+                                travel_time=travel_time,
+                                seat_pitch_short=seat_pitch_short
+                            )
+                        ],
+                        layovers=None,
+                        travel_time=travel_time,
+                        departure_airport=departure_airport,
+                        arrival_airport=arrival_airport,
+                        departure_date=departure_date,
+                        arrival_date=arrival_date,
+                        departure_time=departure_time,
+                        arrival_time=arrival_time,
+                        itinerary_summary=ItinerarySummary(
+                            flights=flight_number,
+                            price=price,
+                            currency='EUR'
+                        )
+                    )
                 )
 
         current_price = safe(parser.css_first("span.gOatQ")).text()
         if not flights:
             raise RuntimeError("No flights found:\n{}".format(r.text_markdown))
 
-        return Result(current_price=current_price, flights=[Flight(**fl) for fl in flights])  # type: ignore
+        return DecodedResult(raw=[] ,best=flights, other=[])  # type: ignore
 
 
+def convert_travel_time_to_minutes(text: str) -> int:
+    text = text.lower().replace('hrs', 'hr').replace('min', '').strip()
+    minutes = 0
 
+    if 'hr' in text:
+        parts = text.split(' hr ')
+        hours, text = parts
+        minutes += int(hours) * 60
+
+    minutes += int(text) 
+
+    return minutes
 
 def __main__():
 
@@ -172,10 +237,8 @@ def __main__():
     
     )
     print(filter.as_b64().decode("utf-8"))
-    flight_data = get_flights_from_filter(filter, data_source='js', mode="common")
-    for flight in flight_data.best:
-        print(flight)
-        print("\n")
+    flight_data = get_flights_from_filter(filter, data_source='html', mode="local")
+    print(flight_data.best[0])
 
 
 

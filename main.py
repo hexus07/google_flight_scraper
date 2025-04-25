@@ -25,6 +25,8 @@ def fetch(params: dict):
         'OTZ': '8053484_44_48_123900_44_436380',
         'NID': '8053484_44_48_123900_44_436380', # checked from the browser actual
     })
+    print(res.url)  # Print the full URL
+    
     assert res.status_code == 200, f"{res.status_code} Result: {res.text_markdown}"
     return res
 
@@ -86,6 +88,7 @@ def parse_response(
         script = parser.css_first(r'script.ds\:1').text()
 
         match = re.search(r'^.*?\{.*?data:(\[.*\]).*\}', script)
+        
         assert match, "No data found in script tag"
         data = json.loads(match.group(1))
         return ResultDecoder.decode(data) if data is not None else None
@@ -218,29 +221,4 @@ def convert_travel_time_to_minutes(text: str) -> int:
 
     return minutes
 
-def __main__():
 
-    # TESTING PURPOSES ONLY
-    filter = create_filter(
-    flight_data=[
-        # Include more if it's not a one-way trip
-        FlightData(
-            date="2025-07-20",  # Date of departure
-            from_airport=["VNO"],  # Departure (airport)
-            to_airport=["BCN"],  # Arrival (airport)
-        ),
-    ],
-    trip="one-way",  # Trip type
-    passengers=Passengers(adults=1, children=0, infants_in_seat=0, infants_on_lap=0),  # Passengers
-    seat="economy",  # Seat type
-    max_stops=1,  # Maximum number of stops
-    
-    )
-    print(filter.as_b64().decode("utf-8"))
-    flight_data = get_flights_from_filter(filter, data_source='html', mode="local")
-    print(flight_data.best[0])
-
-
-
-if __name__ == "__main__":
-    __main__()

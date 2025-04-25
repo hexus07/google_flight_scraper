@@ -1,13 +1,44 @@
 import abc
+from pprint import pprint
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from typing import Any, List, Generic, Optional, Sequence, TypeVar, Union, Tuple
+from typing import Any, List, Generic, Optional, Sequence, TypeVar, Union, Tuple, Dict
 from typing_extensions import TypeAlias, override
-
+from enum import Enum
 from flights_pb_implem import ItinerarySummary
 
 DecodePath: TypeAlias = List[int]
 NLBaseType: TypeAlias = Union[int, str, None, Sequence['NLBaseType']]
+
+
+
+# Map feature array index to a human-readable key
+FEATURE_INDEX_MAP: Dict[int, str] = {
+    1:  "in_seat_power_usb",
+    3:  "in_seat_power",
+    5:  "usb_outlet",
+    9:  "on_demand_video",
+   10: "streaming_media",
+   11: "wifi",
+}
+
+AVAIL_MAP: Dict[Optional[int], str] = {
+    None: "not_available",
+    1:    "included",
+    2:    "for_free",
+    3:    "for_fee",
+}
+
+SEAT_TYPE_MAP: Dict[Optional[int], str] = {
+    None:      "unknown",
+    1:         "average",
+    2:         "below_average",
+    3:         "above_average",
+    4:         "extra_reclining",
+    5:         "lie_flat",
+    6:         "indiv_suite",
+}
+
 
 # N(ested)L(ist)Data, this class allows indexing using a path, and as an int to make
 # traversal easier within the nested list data
@@ -37,6 +68,7 @@ class DecoderKey(Generic[V]):
     decoder: Optional[Callable[[NLData], V]] = None
 
     def decode(self, root: NLData) -> Union[NLBaseType, V]:
+        #pprint(f"Decoding {self.decode_path} from {root}")
         data = root[self.decode_path]
         if isinstance(data, list) and self.decoder:
             assert self.decoder is not None, f'decoder should be provided in order to further decode NLData instances'
@@ -85,14 +117,16 @@ class Flight:
     departure_airport_name: AirportName
     arrival_airport: AirportCode
     arrival_airport_name: AirportName
-    # some_enum: int
-    # some_enum: int
+    emissions: int
     departure_date: Tuple[int, int, int]
     arrival_date: Tuple[int, int, int]
     departure_time: Tuple[int, int]
     arrival_time: Tuple[int, int]
     travel_time: int
     seat_pitch_short: str
+    seat_type: Optional[str]
+    features: Dict[str, str]
+    
     # seat_pitch_long: str
 
 @dataclass
@@ -147,8 +181,7 @@ class FlightDecoder(Decoder):
     DEPARTURE_AIRPORT_NAME: DecoderKey[AirportName] = DecoderKey([4])
     ARRIVAL_AIRPORT: DecoderKey[AirportCode] = DecoderKey([5])
     ARRIVAL_AIRPORT_NAME: DecoderKey[AirportName] = DecoderKey([6])
-    # SOME_ENUM: DecoderKey[int] = DecoderKey([7])
-    # SOME_ENUM: DecoderKey[int] = DecoderKey([9])
+    EMISSIONS: DecoderKey[int] = DecoderKey([31])
     DEPARTURE_TIME: DecoderKey[Tuple[int, int]] = DecoderKey([8])
     ARRIVAL_TIME: DecoderKey[Tuple[int, int]] = DecoderKey([10])
     TRAVEL_TIME: DecoderKey[int] = DecoderKey([11])
@@ -159,8 +192,23 @@ class FlightDecoder(Decoder):
     AIRLINE: DecoderKey[AirlineCode] = DecoderKey([22, 0])
     AIRLINE_NAME: DecoderKey[AirlineName] = DecoderKey([22, 3])
     FLIGHT_NUMBER: DecoderKey[str] = DecoderKey([22, 1])
-    # SEAT_PITCH_LONG: DecoderKey[str] = DecoderKey([30])
+    
     CODESHARES: DecoderKey[List[Codeshare]] = DecoderKey([15], CodeshareDecoder.decode)
+    SEAT_TYPE: DecoderKey[str] = DecoderKey(
+        [],
+        lambda nl: SEAT_TYPE_MAP.get(nl.data[13] if isinstance(nl.data, list) and len(nl.data) > 13 else None, SEAT_TYPE_MAP[None])
+    )
+    
+    FEATURES: DecoderKey[Dict[str, str]] = DecoderKey(
+        [12],
+        lambda nl: {
+            FEATURE_INDEX_MAP[idx]: AVAIL_MAP.get(val)
+            for idx, val in enumerate(nl.data)
+            if idx in FEATURE_INDEX_MAP
+        }
+    )
+
+
 
     @classmethod
     @override

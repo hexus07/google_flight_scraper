@@ -3,15 +3,12 @@
 from typing import List, Literal, Optional, Union
 from selectolax.lexbor import LexborHTMLParser, LexborNode
 
-from dataclass import Result
-from filter import TFSData, create_filter
+from filter import TFSData
 from local_playwright import local_playwright_fetch
-from primp import Client
 
-from hashlib import sha256
+from primp import Client
 from datetime import datetime
 
-from flights_pb_implem import FlightData, Passengers
 from decoder import DecodedResult, ResultDecoder, Itinerary, ItinerarySummary, Flight # decodoer of the response by kftang
 import re
 import json
@@ -38,7 +35,7 @@ def get_flights_from_filter(
         *,
         data_source: DataSource = "js",
         mode: Literal["common", "local"] = "common",
-) -> Union[Result, DecodedResult, None]: 
+) -> Union[DecodedResult, None]: 
     data = filter.as_b64() # Encoding filter data to base64
 
     params = {
@@ -69,7 +66,7 @@ def parse_response(
     *,
     
     dangerously_allow_looping_last_item: bool = False
-) -> Union[Result, DecodedResult, None]:
+) -> Union[DecodedResult, None]:
     class _blank:
         def text(self, *_, **__):
             return ""
@@ -101,7 +98,9 @@ def parse_response(
         if fl:
             is_best_flight = True
             departure_airport = safe(fl.css("ul.Rk10dc li.pIav2d .dPzsIb.AdWm1c   span")[6]).text()[1:-1]
+            departure_airport_name = safe(fl.css_first("ul.Rk10dc li.pIav2d .ZHa2lc.tdMWuf  ")).text().split("\xa0")[0]
             arrival_airport = safe(fl.css("ul.Rk10dc li.pIav2d .SWFQlc span")[-1]).text()[1:-1]
+            arrival_airport_name = safe(fl.css_first("ul.Rk10dc li.pIav2d .FY5t7d.tdMWuf")).text().split("\xa0")[0]
             for item in fl.css("ul.Rk10dc li.pIav2d"):
 
                 # Flight name
@@ -127,35 +126,28 @@ def parse_response(
                 # Get flight stops
                 stops = safe(item.css_first(".BbR8Ec .ogfYpf")).text()
 
-                # Get delay
-                delay = safe(item.css_first(".GsCCve")).text() or None
-
                 # Get prices
                 price = int(safe(item.css_first(".YMlIz.FpEdX")).text()[1:]) or "0"
 
                 # Get plane
                 plane = safe(item.css(".Xsgmwe")[3]).text()
     
-                # Get date
-                date = safe(item.css(".S90skc span")[2]).text()
                 # Get emissions
-                emissions = safe(item.css_first(".AdWm1c.lc3qH")).text().split(" ")[0]
-                emissions_per_passenger = safe(item.css_first("li.WtSsrd span.gI4d6d")).text().split(": ")[1]
-                # Get flight number
+                emissions = int(safe(item.css_first("li.WtSsrd span.gI4d6d")).text()[20:-7])*1000
 
+                # Get flight number
                 flight_number = safe(item.css_first(".Xsgmwe.QS0io")).text().replace('\xa0', '')
                 airline_code, flight_num = flight_number[:2], flight_number[2:]
 
                 # Get class
-                flight_class = safe(item.css_first("span[jsname='Pvlywd']")).text()
+                #flight_class = safe(item.css_first("span[jsname='Pvlywd']")).text()
 
                 # Get operator
                 operator = safe(item.css_first(".kSwLQc.sSHqwe")).text().split(" ")[4:]
-                operator = " ".join(operator)
+                operator = " ".join(operator) if operator else None
 
                 seat_pitch_short = safe(item.css_first("li.WtSsrd")).text()[-6:-1]
-                print(seat_pitch_short)
-                print(operator)
+
                 try:
                     stops_fmt = 0 if stops == "Nonstop" else int(stops.split(" ", 1)[0])
                 except ValueError:
@@ -164,7 +156,7 @@ def parse_response(
                 flights.append(
                     Itinerary(
                         airline_code=airline_code,
-                        airline_names=airline_name,
+                        airline_names=[airline_name],
                         flights=[
                             Flight(
                                 airline=airline_code,
@@ -174,15 +166,18 @@ def parse_response(
                                 codeshares=None,
                                 aircraft=plane,
                                 departure_airport=departure_airport,
-                                departure_airport_name='Vilnius International Airport',
+                                departure_airport_name=departure_airport_name,
                                 arrival_airport=arrival_airport,
-                                arrival_airport_name='Josep TarBarcelonradellas a-El Prat Airport',
+                                arrival_airport_name=arrival_airport_name,
                                 departure_date=departure_date,
                                 arrival_date=arrival_date,
                                 departure_time=departure_time,
                                 arrival_time=arrival_time,
                                 travel_time=travel_time,
-                                seat_pitch_short=seat_pitch_short
+                                seat_pitch_short=seat_pitch_short,
+                                emissions=emissions,
+                                seat_type=None,
+                                features={},
                             )
                         ],
                         layovers=None,
@@ -220,5 +215,4 @@ def convert_travel_time_to_minutes(text: str) -> int:
     minutes += int(text) 
 
     return minutes
-
 

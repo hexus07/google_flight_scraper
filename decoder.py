@@ -1,5 +1,4 @@
 import abc
-from pprint import pprint
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any, List, Generic, Optional, Sequence, TypeVar, Union, Tuple, Dict
@@ -68,7 +67,7 @@ class DecoderKey(Generic[V]):
     decoder: Optional[Callable[[NLData], V]] = None
 
     def decode(self, root: NLData) -> Union[NLBaseType, V]:
-        #pprint(f"Decoding {self.decode_path} from {root}")
+        
         data = root[self.decode_path]
         if isinstance(data, list) and self.decoder:
             assert self.decoder is not None, f'decoder should be provided in order to further decode NLData instances'
@@ -179,8 +178,8 @@ class FlightDecoder(Decoder):
     OPERATOR: DecoderKey[AirlineName] = DecoderKey([2])
     DEPARTURE_AIRPORT: DecoderKey[AirportCode] = DecoderKey([3])
     DEPARTURE_AIRPORT_NAME: DecoderKey[AirportName] = DecoderKey([4])
-    ARRIVAL_AIRPORT: DecoderKey[AirportCode] = DecoderKey([5])
-    ARRIVAL_AIRPORT_NAME: DecoderKey[AirportName] = DecoderKey([6])
+    ARRIVAL_AIRPORT: DecoderKey[AirportCode] = DecoderKey([6])
+    ARRIVAL_AIRPORT_NAME: DecoderKey[AirportName] = DecoderKey([5])
     EMISSIONS: DecoderKey[int] = DecoderKey([31])
     DEPARTURE_TIME: DecoderKey[Tuple[int, int]] = DecoderKey([8])
     ARRIVAL_TIME: DecoderKey[Tuple[int, int]] = DecoderKey([10])

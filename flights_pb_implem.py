@@ -15,13 +15,15 @@ class FlightData:
         from_airport (List[str]): Departure airports.
         to_airport (List[str]): Arrival airports.
         max_stops (int, optional): Maximum number of stops. Default is None.
+
     
     """
     # Attributes of the class (restricting all other atributees of a class)
-    __slots__ = ("date", "from_airport", "to_airport", "max_stops")
+    __slots__ = ("date", "from_airport", "to_airport", "airlines", "max_stops")
     date: str
     from_airport: List[str]
     to_airport: List[str]
+    airlines: Optional[List[str]]
     max_stops: Optional[int]
 
     def __init__( 
@@ -30,9 +32,15 @@ class FlightData:
         date: str,
         from_airport: Union[List[Airport], List[str]],
         to_airport: Union[List[Airport], List[str]],
+        airlines: Optional[List[str]] = None,
         max_stops: Optional[int] = None,
     ):
         self.date = date
+
+        self.airlines =[
+             airline 
+             for airline in airlines
+        ]
         self.from_airport = [
             airport.value if isinstance(airport, Airport) else airport
             for airport in from_airport
@@ -44,19 +52,27 @@ class FlightData:
         self.max_stops = max_stops
 
     def attach(self, info: PB.Info) -> None: 
+        
         data = info.data.add()
         data.date = self.date
+
         for from_airport in self.from_airport:
             from_flight = data.from_flight.add()
             from_flight.airport = from_airport
+
         for to_airport in self.to_airport:
             to_flight = data.to_flight.add()
             to_flight.airport = to_airport
+
+        if self.airlines:
+            data.airlines.extend(self.airlines)
+
 
         if self.max_stops is not None:
             data.max_stops = self.max_stops
         else:
             data.max_stops = 0
+        
 
     def __repr__(self) -> str:
         print (
@@ -133,8 +149,8 @@ class TFSData:
         # If max_stops is set, attach it to all flight data entries
         if self.max_stops is not None:
             for flight in info.data:
-                flight.max_stops = self.max_stops
-
+                flight.max_stops = self.max_stops     
+                
         return info
 
     def to_string(self) -> bytes:
@@ -182,7 +198,7 @@ class TFSData:
         )
 
     def __repr__(self) -> str:
-        return f"TFSData(flight_data={self.flight_data!r}, max_stops={self.max_stops!r})"
+                return f"TFSData(flight_data={self.flight_data!r}, max_stops={self.max_stops!r})"
 
 @dataclass
 class ItinerarySummary:

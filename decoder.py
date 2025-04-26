@@ -49,12 +49,12 @@ class NLData(Sequence[NLBaseType]):
         if isinstance(decode_path, int):
             return self.data[decode_path]
         it = self.data
+        #print(f"Decoding path: {it}")
         for index in decode_path:
             assert isinstance(it, list), f'Found non list type while trying to decode {decode_path}'
             assert index < len(it), f'Trying to traverse to index out of range when decoding {decode_path}'
             it = it[index]
         return it
-
     @override
     def __len__(self) -> int:
         return len(self.data)
@@ -66,9 +66,13 @@ class DecoderKey(Generic[V]):
     decode_path: DecodePath
     decoder: Optional[Callable[[NLData], V]] = None
 
-    def decode(self, root: NLData) -> Union[NLBaseType, V]:
+    def decode(self, root: NLData) -> Union[NLBaseType, V]:        
+        try:
+            data = root[self.decode_path]
+        except AssertionError as e:
+            print(f"Error decoding path {self.decode_path}: {e} - is not present in the data")
+            return None
         
-        data = root[self.decode_path]
         if isinstance(data, list) and self.decoder:
             assert self.decoder is not None, f'decoder should be provided in order to further decode NLData instances'
             return self.decoder(NLData(data))
@@ -256,13 +260,21 @@ class ItineraryDecoder(Decoder):
 
 
 class ResultDecoder(Decoder):
-    # UNKNOWN_1: DecoderKey[Any] = DecoderKey([0])
-    # AIRPORT_DETAILS: DecoderKey[Any] = DecoderKey([1])
-    BEST: DecoderKey[List[Itinerary]] = DecoderKey([2, 0], ItineraryDecoder.decode)
+    BEST: DecoderKey[Optional[List[Itinerary]]] = DecoderKey(
+        [2, 0],
+        ItineraryDecoder.decode)
+
     OTHER: DecoderKey[List[Itinerary]] = DecoderKey([3, 0], ItineraryDecoder.decode)
 
     @classmethod
     @override
     def decode(cls, root: Union[list, NLData]) -> DecodedResult:
         assert isinstance(root, list), 'Root data must be list type'
-        return DecodedResult(**cls.decode_el(NLData(root)), raw=root)
+
+        # Decode elements and handle missing or null fields
+        decoded_data = cls.decode_el(NLData(root))
+        return DecodedResult(
+            best=decoded_data.get("best", []),  # Default to an empty list if BEST is missing
+            other=decoded_data.get("other", []),  # Default to an empty list if OTHER is missing
+            raw=root
+        )

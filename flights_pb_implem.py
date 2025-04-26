@@ -14,6 +14,7 @@ class FlightData:
         date (str): Date of the flight.
         from_airport (List[str]): Departure airports.
         to_airport (List[str]): Arrival airports.
+        airlines (List[str], optional): List of airline codes. Default is null List.
         max_stops (int, optional): Maximum number of stops. Default is None.
 
     

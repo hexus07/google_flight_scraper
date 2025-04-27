@@ -1,7 +1,6 @@
 import base64
 from typing import Any, List, Optional, TYPE_CHECKING, Literal, Union # for better readability and maintainability
 import  flights_pb2 as PB
-from _gen_airports import Airport
 from dataclasses import dataclass
 if TYPE_CHECKING:
     import flights_pb2 as PB
@@ -31,8 +30,8 @@ class FlightData:
         self,
         *,
         date: str,
-        from_airport: Union[List[Airport], List[str]],
-        to_airport: Union[List[Airport], List[str]],
+        from_airport: Union[List[str]],
+        to_airport: Union[List[str]],
         airlines: Optional[List[str]] = None,
         max_stops: Optional[int] = None,
     ):
@@ -43,11 +42,11 @@ class FlightData:
              for airline in airlines
         ]
         self.from_airport = [
-            airport.value if isinstance(airport, Airport) else airport
+            airport 
             for airport in from_airport
         ]
         self.to_airport = [
-            airport.value if isinstance(airport, Airport) else airport
+            airport
             for airport in to_airport
         ]
         self.max_stops = max_stops

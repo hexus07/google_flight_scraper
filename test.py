@@ -1,6 +1,8 @@
 from filter import create_filter, Passengers
 from flights_pb_implem import FlightData
 from main import get_flights_from_filter
+from search import search_airline, search_airport
+
 
 def test_workflow():
     # Step 1: Create a filter
@@ -8,10 +10,10 @@ def test_workflow():
     flight_filter = create_filter(
         flight_data=[
             FlightData(
-                airlines=["BT", "FR"],  # Airline code (optional)
+                airlines= search_airline('Ryanair'),  # Airline code (optional)
                 date="2025-07-25",  # Date of departure
-                from_airport=["MAD"],  # Departure airport
-                to_airport=["KUN", "VNO"],  # Arrival airports
+                from_airport=["KUN"],  # Departure airport
+                to_airport=search_airport('Madrid'),  # Arrival airports
             ),
         ],
         trip="one-way",  # Trip type

@@ -4,8 +4,6 @@ from typing import List, Literal, Optional, Union
 from selectolax.lexbor import LexborHTMLParser, LexborNode
 
 from filter import TFSData
-from local_playwright import local_playwright_fetch
-
 from primp import Client
 from datetime import datetime
 
@@ -52,6 +50,7 @@ def get_flights_from_filter(
             print(f"Error fetching data: {e}")
             res = local_playwright_fetch(params)
     else: # Local mode for testing 
+        from local_playwright import local_playwright_fetch
         res = local_playwright_fetch(params)
 
     try:

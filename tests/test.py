@@ -8,7 +8,7 @@ def test_workflow():
         flight_data=[
             FlightData(
                 airlines= search_airline('Ryanair'),  # Airline code (optional)
-                date="2025-07-25",  # Date of departure
+                date="2025-07-20",  # Date of departure
                 from_airport=["KUN"],  # Departure airport
                 to_airport=search_airport('Madrid'),  # Arrival airports
             ),

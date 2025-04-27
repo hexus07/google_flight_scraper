@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Any, List, Generic, Optional, Sequence, TypeVar, Union, Tuple, Dict
 from typing_extensions import TypeAlias, override
 from enum import Enum
-from flights_pb_implem import ItinerarySummary
+from google_flights.flights_pb_implem import ItinerarySummary
 
 DecodePath: TypeAlias = List[int]
 NLBaseType: TypeAlias = Union[int, str, None, Sequence['NLBaseType']]

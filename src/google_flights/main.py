@@ -3,11 +3,11 @@
 from typing import List, Literal, Optional, Union
 from selectolax.lexbor import LexborHTMLParser, LexborNode
 
-from filter import TFSData
+from google_flights.filter import TFSData
 from primp import Client
 from datetime import datetime
 
-from decoder import DecodedResult, ResultDecoder, Itinerary, ItinerarySummary, Flight # decodoer of the response by kftang
+from google_flights.decoder import DecodedResult, ResultDecoder, Itinerary, ItinerarySummary, Flight # decodoer of the response by kftang
 import re
 import json
 DataSource = Literal['html', 'js']

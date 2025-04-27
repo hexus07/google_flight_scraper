@@ -1,8 +1,5 @@
-from filter import create_filter, Passengers
-from flights_pb_implem import FlightData
-from main import get_flights_from_filter
-from search import search_airline, search_airport
-
+from google_flights import create_filter, Passengers, FlightData, search_airline, search_airport
+from google_flights import get_flights_from_filter
 
 def test_workflow():
     # Step 1: Create a filter

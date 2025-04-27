@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "google-flights"
+version = "0.0.1"
+description = "Google Flights scraper (API) implemented in Python"
+keywords = ["flights", "google", "google-flights", "scraper", "protobuf", "travel", "trip", "passengers", "airport", "js"]
+authors = [
+  { name = "Daniil", email = "daniilchuhai07@gmail.com" },
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+readme = "README.md"
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.8"
+dependencies = [
+  "primp",
+  "protobuf",
+  "selectolax",
+  "typing_extensions"
+]
+
+[project.optional-dependencies]
+local = [
+    "playwright"
+]
+
+[project.urls]
+Homepage = "https://github.com/hexus07/google_flight_scraper"
+Issues = "https://github.com/hexus07/google_flight_scraper/issues"
+
+[tool.hatch.metadata]
+packages = ["google_flights"]

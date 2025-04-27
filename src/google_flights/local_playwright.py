@@ -1,8 +1,9 @@
 from typing import Any
 import asyncio
-from playwright.async_api import async_playwright
+
 
 async def fetch_with_playwright(url: str) -> str:
+    from playwright.async_api import async_playwright
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=False,
             args=[

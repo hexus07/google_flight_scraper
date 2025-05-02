@@ -7,10 +7,10 @@ def test_workflow():
     flight_filter = create_filter(
         flight_data=[
             FlightData(
-                airlines= search_airline('Ryanair'),  # Airline code (optional)
+                airlines= []  ,  # Airline code (optional)
                 date="2025-07-20",  # Date of departure
-                from_airport=["KUN"],  # Departure airport
-                to_airport=search_airport('Madrid'),  # Arrival airports
+                from_airport=["VNO", "RIX", "TLL", "KUN"],  # Departure airport
+                to_airport=["VNO", "RIX", "TLL", "KUN"],  # Arrival airports
             ),
         ],
         trip="one-way",  # Trip type

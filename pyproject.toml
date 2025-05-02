@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "google-flights"
-version = "0.0.2"
+version = "0.0.3"
 description = "Google Flights scraper (API) implemented in Python"
 keywords = ["flights", "google", "google-flights", "scraper", "protobuf", "travel", "trip", "passengers", "airport", "js"]
 authors = [

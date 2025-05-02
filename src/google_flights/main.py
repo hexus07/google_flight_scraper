@@ -20,7 +20,6 @@ def fetch(params: dict):
         'OTZ': '8053484_44_48_123900_44_436380',
         'NID': '8053484_44_48_123900_44_436380', # checked from the browser actual
     })
-    print(res.url)  # Print the full URL
     
     assert res.status_code == 200, f"{res.status_code} Result: {res.text_markdown}"
     return res

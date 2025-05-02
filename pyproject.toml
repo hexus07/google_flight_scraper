@@ -24,7 +24,8 @@ dependencies = [
   "primp",
   "protobuf",
   "selectolax",
-  "typing_extensions"
+  "typing_extensions",
+  "requests"
 ]
 
 [project.optional-dependencies]

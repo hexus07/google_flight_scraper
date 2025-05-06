@@ -17,13 +17,13 @@ Fast flight data scraper from Google Flights which fetches and decodes flight in
 ## Installation
 
 ```haskell
-  pip install google-flight
+  pip install google-flights
 ```
 
 or if you want to run it locally (with Playwright):
 
 ```haskell
-  pip install google-flight[local]
+  pip install google-flights[local]
 ```
    
 ## Usage/Examples

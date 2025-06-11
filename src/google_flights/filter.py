@@ -18,6 +18,7 @@ def create_filter(
         seat ("economy" | "premium-economy" | "business" | "first"): Seat.
         max_stops (int, optional): Maximum number of stops. Defaults to None.
     """
+
     for fd in flight_data:
         fd.max_stops = max_stops
 

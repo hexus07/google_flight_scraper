@@ -1,6 +1,6 @@
 from filter import create_filter
 from flights_pb_implem import FlightData, Passengers, TFSData
-from main import get_flights_from_filter, get_booking_url, get_round_trip_options
+from main import get_flights_from_filter, get_booking_url, get_round_trip_options, get_one_way_options
 from search import search_airline, search_airport
 from decoder import DecodedResult
 
@@ -46,4 +46,23 @@ flight_filter = create_filter(flight_data = [
         max_stops=1,  # Maximum number of stops
     )
 
-print(get_round_trip_options(flight_filter))
+
+flight_filter1 = create_filter(flight_data = [
+            FlightData(
+                airlines= []  ,  # Airline code (optional)
+                date="2025-07-20",  # Date of departure
+                from_airport=["VNO"],  # Departure airport
+                to_airport=["MAD"],  # Itinerary data (optional)
+                #itin_dataitinerary1=,  # Itinerary data (optional)
+            )],
+        trip="one-way",  # Trip type
+        passengers=Passengers(adults=1, children=0, infants_in_seat=0, infants_on_lap=0),  # Passengers
+        seat="economy",  # Seat type
+        max_stops=1,  # Maximum number of stops
+    )
+
+# Get flights from the filter
+one_way_flights = get_one_way_options(flight_filter1)
+
+for flight in one_way_flights:
+    print(flight.get("url"))

@@ -1,5 +1,5 @@
 from typing import Literal, List, Optional
-from google_flights.flights_pb_implem import FlightData, Passengers, TFSData
+from flights_pb_implem import FlightData, Passengers, TFSData
 
 def create_filter(
     *,

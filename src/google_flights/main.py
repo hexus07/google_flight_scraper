@@ -1,26 +1,43 @@
 # -*- coding: utf-8 -*-
-# Imorting necessary libraries
-from typing import List, Literal, Optional, Union
+# Importing necessary libraries
+from typing import List, Literal, Optional, Union, Dict
 from selectolax.lexbor import LexborHTMLParser, LexborNode
 
-from google_flights.filter import TFSData
+from filter import TFSData
 from primp import Client
 from datetime import datetime
+import copy
 
-from google_flights.decoder import DecodedResult, ResultDecoder, Itinerary, ItinerarySummary, Flight # decodoer of the response by kftang
+from decoder import DecodedResult, ResultDecoder, Itinerary, ItinerarySummary, Flight # decoder of the response by kftang
 import re
 import json
+
+import time
+from itertools import chain
+import flights_pb_implem as PB  # Protobuf implementation for flight data
+
 DataSource = Literal['html', 'js']
 
 # Function to fetch data from a URL with given parameters - serverless
-def fetch(params: dict):
+def fetch_search(params: dict):
     client = Client(impersonate="chrome_126", verify=False)
     res = client.get("https://www.google.com/travel/flights", params=params, cookies={
         'SOCS': 'CAISNQgjEitib3FfaWRlbnRpdHlmcm9udGVuZHVpc2VydmVyXzIwMjUwNDIzLjA0X3AwGgJ1ayACGgYIgP6lwAY',
         'OTZ': '8053484_44_48_123900_44_436380',
         'NID': '8053484_44_48_123900_44_436380', # checked from the browser actual
     })
-    
+    print(f"Fetching data from: {res.url}")
+    assert res.status_code == 200, f"{res.status_code} Result: {res.text_markdown}"
+    return res
+
+
+def fetch_booking(params: dict):
+    client = Client(impersonate="chrome_126", verify=False)
+    res = client.get("https://www.google.com/travel/flights/booking", params=params, cookies={
+        'SOCS': 'CAISNQgjEitib3FfaWRlbnRpdHlmcm9udGVuZHVpc2VydmVyXzIwMjUwNDIzLjA0X3AwGgJ1ayACGgYIgP6lwAY',
+        'OTZ': '8053484_44_48_123900_44_436380',
+        'NID': '8053484_44_48_123900_44_436380', # checked from the browser actual
+    })
     assert res.status_code == 200, f"{res.status_code} Result: {res.text_markdown}"
     return res
 
@@ -29,6 +46,7 @@ def fetch(params: dict):
 def get_flights_from_filter(
         filter: TFSData,
         currency: str = "EUR",
+        language: str = "en-GB",
         *,
         data_source: DataSource = "js",
         mode: Literal["common", "local"] = "common",
@@ -37,14 +55,14 @@ def get_flights_from_filter(
 
     params = {
         "tfs": data.decode("utf-8"), # Decoding the base64 data
-        "hl": "en-GB", # For 24-hour format
+        "hl": language, # For 24-hour format
         "tfu": "EgQIABABIgA",
         "curr": currency,
     } 
 
     if mode == 'common':
         try:
-            res = fetch(params)
+            res = fetch_search(params)
         except Exception as e:
             print(f"Error fetching data: {e}")
             res = local_playwright_fetch(params)
@@ -58,11 +76,114 @@ def get_flights_from_filter(
         raise e
     
 
+def get_booking_url(
+        flight_filter: TFSData,
+        currency: str = "EUR",
+) -> str: 
+    """
+    Function to get the booking URL for a flight based on the filter data (one-way/round-trip).
+    """
+
+
+    data = flight_filter.as_b64() # Encoding filter data to base64
+
+    #print(f"Encoded data: {data}")
+
+
+    params = {
+        "tfs": data.decode("utf-8"), # Decoding the base64 data
+        "hl": "en-GB", # For 24-hour format
+        "tfu": "EgQIABABIgA",
+        "curr": currency,
+    } 
+
+
+
+    assert flight_filter.trip == 1 and all(fd.itin_data for fd in flight_filter.flight_data)
+    # If all flight data is present, fetch booking URL
+    url = fetch_booking(params).url
+    return url
+
+
+def get_round_trip_options(
+        base_filter: TFSData,
+        currency: str = "EUR",
+        language: str = "en-GB",
+) -> List[Dict]:
+    """
+    Function to get round-trip flight options based on the base filter.
+
+    Returns a list of tuples containing departure and return itineraries, and the booking URL.
+    """
+
+    options = []
+    try:
+        outbound_res = get_flights_from_filter(base_filter, currency=currency, language=language)
+    except Exception as e:
+        raise RuntimeError(f"Error fetching outbound flight data: {e}")
+    
+    assert outbound_res, "No flight data returned for outbound flight."
+    for outbound in chain(outbound_res.best or outbound_res.other[:3]):
+        # 1) Create a copy of the base filter for return flight and update it with itinerary
+        return_filter = copy.deepcopy(base_filter)  # Create a copy of the base filter for return flight
+        return_filter.flight_data[0].itin_data = []
+        for leg in outbound.flights:
+            return_filter.flight_data[0].itin_data.append({
+                "departure_airport": leg.departure_airport,
+                "arrival_airport":   leg.arrival_airport,
+                "departure_date":    f"{leg.departure_date[0]}-"
+                                      f"{leg.departure_date[1]:02d}-"
+                                      f"{leg.departure_date[2]:02d}",
+                "flight_code":       leg.airline,
+                "flight_number":     leg.flight_number,
+            })
+
+        # 2) Run return-flight search
+        return_results = get_flights_from_filter(
+            return_filter, currency, language
+        )
+            
+        try:
+            return_flight = (return_results.best or return_results.other)[0]
+        except TypeError:
+            options.append({
+                "outbound": outbound,
+                "return": None,
+                "url": get_booking_url(return_filter)
+            })
+
+        return_filter.flight_data[1].itin_data = []
+        for leg in return_flight.flights:
+            return_filter.flight_data[1].itin_data.append({
+                "departure_airport": leg.departure_airport,
+                "arrival_airport":   leg.arrival_airport,
+                "departure_date":    f"{leg.departure_date[0]}-"
+                                    f"{leg.departure_date[1]:02d}-"
+                                    f"{leg.departure_date[2]:02d}",
+                "flight_code":       leg.airline,
+                "flight_number":     leg.flight_number,
+            })
+
+        try:
+            url = get_booking_url(return_filter)
+        except AssertionError:
+            print("AssertionError: Itinerary data is missing for return flight.")
+            # something went wrong (missing data), skip
+            continue
+        
+        # 3) Append the outbound and return flight options with URL
+        options.append({
+            "outbound": outbound,
+            "return": return_flight,
+            "url": url
+        })
+
+    return options
+
 def parse_response(
     r,
     data_source: DataSource,
     *,
-    
     dangerously_allow_looping_last_item: bool = False
 ) -> Union[DecodedResult, None]:
     class _blank:

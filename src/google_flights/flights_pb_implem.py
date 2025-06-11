@@ -1,10 +1,8 @@
 import base64
 from typing import Any, List, Optional, TYPE_CHECKING, Literal, Union # for better readability and maintainability
-import google_flights.flights_pb2 as PB
+import flights_pb2 as PB
 from dataclasses import dataclass
 
-if TYPE_CHECKING:
-    import flights_pb2 as PB
 
 class FlightData:
     """
@@ -16,16 +14,18 @@ class FlightData:
         to_airport (List[str]): Arrival airports.
         airlines (List[str], optional): List of airline codes. Default is null List.
         max_stops (int, optional): Maximum number of stops. Default is None.
+        itin_data: (PB.ItineraryData, optional): Itinerary data for the flight. Default is None.
 
-    
     """
     # Attributes of the class (restricting all other atributees of a class)
-    __slots__ = ("date", "from_airport", "to_airport", "airlines", "max_stops")
+    __slots__ = ("date", "from_airport", "to_airport", "airlines", "max_stops", "itin_data")
     date: str
     from_airport: List[str]
     to_airport: List[str]
     airlines: Optional[List[str]]
+
     max_stops: Optional[int]
+    itin_data: Optional[dict]
 
     def __init__( 
         self,
@@ -35,6 +35,7 @@ class FlightData:
         to_airport: Union[List[str]],
         airlines: Optional[List[str]] = None,
         max_stops: Optional[int] = None,
+        itin_data: Optional[dict] = None,  # Itinerary data for the flight
     ):
         self.date = date
 
@@ -52,6 +53,11 @@ class FlightData:
         ]
         self.max_stops = max_stops
 
+        self.itin_data = [
+            itin_data
+            for itin_data in (itin_data or [{}])
+        ]
+
     def attach(self, info: PB.Info) -> None: 
         
         data = info.data.add()
@@ -60,10 +66,12 @@ class FlightData:
         for from_airport in self.from_airport:
             from_flight = data.from_flight.add()
             from_flight.airport = from_airport
+            from_flight.flag = -1
 
         for to_airport in self.to_airport:
             to_flight = data.to_flight.add()
             to_flight.airport = to_airport
+            to_flight.flag = -1
 
         if self.airlines:
             data.airlines.extend(self.airlines)
@@ -73,14 +81,25 @@ class FlightData:
             data.max_stops = self.max_stops
         else:
             data.max_stops = 0
-        
+
+        for itin in self.itin_data:
+            if itin != {}:
+                itin_data = data.itin_data.add()
+                itin_data.departure_airport = itin.get("departure_airport", "")
+                itin_data.departure_date = itin.get("departure_date", "")
+                itin_data.arrival_airport = itin.get("arrival_airport", "")
+                itin_data.flight_code = itin.get("flight_code", "")
+                itin_data.flight_number = itin.get("flight_number", "")
+
+
 
     def __repr__(self) -> str:
         print (
             f"FlightData(date={self.date!r}, "
             f"from_airport={self.from_airport}, "
             f"to_airport={self.to_airport}, "
-            f"max_stops={self.max_stops})"
+            f"max_stops={self.max_stops}, "
+            f"itin_data={self.itin_data}"
         )
     
 
@@ -99,7 +118,7 @@ class Passengers:
         assert (
             infants_on_lap <= adults
         ), "You must have at least one adult per infant on lap"
-
+        
         self.pb = []
         self.pb += [PB.Passenger.ADULT for _ in range(adults)]
         self.pb += [PB.Passenger.CHILD for _ in range(children)]
@@ -107,7 +126,6 @@ class Passengers:
         self.pb += [PB.Passenger.INFANT_ON_LAP for _ in range(infants_on_lap)]
 
         self._data = (adults, children, infants_in_seat, infants_on_lap)
-
     def attach(self, info: PB.Info) -> None:  # type: ignore
         for p in self.pb:
             info.passengers.append(p)
@@ -141,6 +159,10 @@ class TFSData:
         info = PB.Info()
         info.seat = self.seat
         info.trip = self.trip
+
+        info.flag_1 = 14  
+        info.flag_2 = 1  
+        info.flag_3 = -1 
 
         self.passengers.attach(info)
 
@@ -199,7 +221,10 @@ class TFSData:
         )
 
     def __repr__(self) -> str:
-                return f"TFSData(flight_data={self.flight_data!r}, max_stops={self.max_stops!r})"
+        return (
+            f"TFSData(flight_data={self.flight_data}, seat={self.seat}, "
+            f"trip={self.trip}, passengers={self.passengers}, max_stops={self.max_stops})"
+        )
 
 @dataclass
 class ItinerarySummary:

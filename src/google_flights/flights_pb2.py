@@ -24,27 +24,29 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rflights.proto\"\x1a\n\x07\x41irport\x12\x0f\n\x07\x61irport\x18\x02 \x01(\t\"\x8e\x01\n\nFlightData\x12\x0c\n\x04\x64\x61te\x18\x02 \x01(\t\x12\x10\n\x08\x61irlines\x18\x06 \x03(\t\x12\x1d\n\x0b\x66rom_flight\x18\r \x03(\x0b\x32\x08.Airport\x12\x1b\n\tto_flight\x18\x0e \x03(\x0b\x32\x08.Airport\x12\x16\n\tmax_stops\x18\x05 \x01(\x05H\x00\x88\x01\x01\x42\x0c\n\n_max_stops\"k\n\x04Info\x12\x19\n\x04\x64\x61ta\x18\x03 \x03(\x0b\x32\x0b.FlightData\x12\x13\n\x04seat\x18\t \x01(\x0e\x32\x05.Seat\x12\x1e\n\npassengers\x18\x08 \x03(\x0e\x32\n.Passenger\x12\x13\n\x04trip\x18\x13 \x01(\x0e\x32\x05.Trip\"(\n\x05Price\x12\r\n\x05price\x18\x01 \x01(\x05\x12\x10\n\x08\x63urrency\x18\x03 \x01(\t\":\n\x10ItinerarySummary\x12\x0f\n\x07\x66lights\x18\x02 \x01(\t\x12\x15\n\x05price\x18\x03 \x01(\x0b\x32\x06.Price*S\n\x04Seat\x12\x10\n\x0cUNKNOWN_SEAT\x10\x00\x12\x0b\n\x07\x45\x43ONOMY\x10\x01\x12\x13\n\x0fPREMIUM_ECONOMY\x10\x02\x12\x0c\n\x08\x42USINESS\x10\x03\x12\t\n\x05\x46IRST\x10\x04*E\n\x04Trip\x12\x10\n\x0cUNKNOWN_TRIP\x10\x00\x12\x0e\n\nROUND_TRIP\x10\x01\x12\x0b\n\x07ONE_WAY\x10\x02\x12\x0e\n\nMULTI_CITY\x10\x03*_\n\tPassenger\x12\x15\n\x11UNKNOWN_PASSENGER\x10\x00\x12\t\n\x05\x41\x44ULT\x10\x01\x12\t\n\x05\x43HILD\x10\x02\x12\x12\n\x0eINFANT_IN_SEAT\x10\x03\x12\x11\n\rINFANT_ON_LAP\x10\x04\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rflights.proto\"(\n\x07\x41irport\x12\x0c\n\x04\x66lag\x18\x01 \x01(\x11\x12\x0f\n\x07\x61irport\x18\x02 \x01(\t\"\x87\x01\n\rItineraryData\x12\x19\n\x11\x64\x65parture_airport\x18\x01 \x01(\t\x12\x16\n\x0e\x64\x65parture_date\x18\x02 \x01(\t\x12\x17\n\x0f\x61rrival_airport\x18\x03 \x01(\t\x12\x13\n\x0b\x66light_code\x18\x05 \x01(\t\x12\x15\n\rflight_number\x18\x06 \x01(\t\"\xb1\x01\n\nFlightData\x12\x0c\n\x04\x64\x61te\x18\x02 \x01(\t\x12!\n\titin_data\x18\x04 \x03(\x0b\x32\x0e.ItineraryData\x12\x16\n\tmax_stops\x18\x05 \x01(\x05H\x00\x88\x01\x01\x12\x10\n\x08\x61irlines\x18\x06 \x03(\t\x12\x1d\n\x0b\x66rom_flight\x18\r \x03(\x0b\x32\x08.Airport\x12\x1b\n\tto_flight\x18\x0e \x03(\x0b\x32\x08.AirportB\x0c\n\n_max_stops\"\x9b\x01\n\x04Info\x12\x0e\n\x06\x66lag_1\x18\x01 \x01(\x11\x12\x0e\n\x06\x66lag_2\x18\x02 \x01(\x11\x12\x19\n\x04\x64\x61ta\x18\x03 \x03(\x0b\x32\x0b.FlightData\x12\x1e\n\npassengers\x18\x08 \x03(\x0e\x32\n.Passenger\x12\x13\n\x04seat\x18\t \x01(\x0e\x32\x05.Seat\x12\x0e\n\x06\x66lag_3\x18\x0e \x01(\x11\x12\x13\n\x04trip\x18\x13 \x01(\x0e\x32\x05.Trip\"(\n\x05Price\x12\r\n\x05price\x18\x01 \x01(\x05\x12\x10\n\x08\x63urrency\x18\x03 \x01(\t\":\n\x10ItinerarySummary\x12\x0f\n\x07\x66lights\x18\x02 \x01(\t\x12\x15\n\x05price\x18\x03 \x01(\x0b\x32\x06.Price*S\n\x04Seat\x12\x10\n\x0cUNKNOWN_SEAT\x10\x00\x12\x0b\n\x07\x45\x43ONOMY\x10\x01\x12\x13\n\x0fPREMIUM_ECONOMY\x10\x02\x12\x0c\n\x08\x42USINESS\x10\x03\x12\t\n\x05\x46IRST\x10\x04*E\n\x04Trip\x12\x10\n\x0cUNKNOWN_TRIP\x10\x00\x12\x0e\n\nROUND_TRIP\x10\x01\x12\x0b\n\x07ONE_WAY\x10\x02\x12\x0e\n\nMULTI_CITY\x10\x03*_\n\tPassenger\x12\x15\n\x11UNKNOWN_PASSENGER\x10\x00\x12\t\n\x05\x41\x44ULT\x10\x01\x12\t\n\x05\x43HILD\x10\x02\x12\x12\n\x0eINFANT_IN_SEAT\x10\x03\x12\x11\n\rINFANT_ON_LAP\x10\x04\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'flights_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_SEAT']._serialized_start=401
-  _globals['_SEAT']._serialized_end=484
-  _globals['_TRIP']._serialized_start=486
-  _globals['_TRIP']._serialized_end=555
-  _globals['_PASSENGER']._serialized_start=557
-  _globals['_PASSENGER']._serialized_end=652
+  _globals['_SEAT']._serialized_start=637
+  _globals['_SEAT']._serialized_end=720
+  _globals['_TRIP']._serialized_start=722
+  _globals['_TRIP']._serialized_end=791
+  _globals['_PASSENGER']._serialized_start=793
+  _globals['_PASSENGER']._serialized_end=888
   _globals['_AIRPORT']._serialized_start=17
-  _globals['_AIRPORT']._serialized_end=43
-  _globals['_FLIGHTDATA']._serialized_start=46
-  _globals['_FLIGHTDATA']._serialized_end=188
-  _globals['_INFO']._serialized_start=190
-  _globals['_INFO']._serialized_end=297
-  _globals['_PRICE']._serialized_start=299
-  _globals['_PRICE']._serialized_end=339
-  _globals['_ITINERARYSUMMARY']._serialized_start=341
-  _globals['_ITINERARYSUMMARY']._serialized_end=399
+  _globals['_AIRPORT']._serialized_end=57
+  _globals['_ITINERARYDATA']._serialized_start=60
+  _globals['_ITINERARYDATA']._serialized_end=195
+  _globals['_FLIGHTDATA']._serialized_start=198
+  _globals['_FLIGHTDATA']._serialized_end=375
+  _globals['_INFO']._serialized_start=378
+  _globals['_INFO']._serialized_end=533
+  _globals['_PRICE']._serialized_start=535
+  _globals['_PRICE']._serialized_end=575
+  _globals['_ITINERARYSUMMARY']._serialized_start=577
+  _globals['_ITINERARYSUMMARY']._serialized_end=635
 # @@protoc_insertion_point(module_scope)

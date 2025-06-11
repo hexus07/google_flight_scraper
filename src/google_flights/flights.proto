@@ -1,15 +1,26 @@
 syntax = "proto3";
 
 message Airport {
+  sint32   flag = 1;
   string airport = 2;
 }
 
+message ItineraryData {
+  string departure_airport = 1; // KUN
+  string departure_date = 2;    // 2025-07-20
+  string arrival_airport = 3;   // MAD
+  string flight_code = 5;           // FR
+  string flight_number = 6;     // 103
+}
+
+
 message FlightData {
   string date = 2;
+  repeated ItineraryData itin_data = 4;
+  optional int32 max_stops = 5;
   repeated string airlines = 6;
   repeated Airport from_flight = 13;
   repeated Airport to_flight = 14;
-  optional int32 max_stops = 5;
 }
 
 enum Seat {
@@ -36,9 +47,12 @@ enum Passenger {
 }
 
 message Info {
+  sint32              flag_1         = 1;  // zig-zag(14)=28 → varint 0x1c
+  sint32              flag_2       = 2;  // zig-zag(1)=2  → varint 0x02
   repeated FlightData data = 3;
-  Seat seat = 9;
   repeated Passenger passengers = 8;
+  Seat seat = 9;
+  sint32              flag_3  = 14; // zig-zag(–1)=1 → varint 0x01
   Trip trip = 19;
 }
 

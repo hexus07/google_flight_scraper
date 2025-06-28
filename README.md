@@ -39,7 +39,7 @@ flight_filter = create_filter(
         FlightData(
             airlines=['FR'],  # Airline codes - "FR" and "RK" - can be passed as list ["FR","RK"]
             date="2025-07-20",      # Date of departure
-            from_airport=search_airport("Kaunas")  # Departure airport ["KUNs"]
+            from_airport=["KUN"]  # Departure airport ["KUN"]
             to_airport=["MAD"],  # Arrival airports
         ),
     ],

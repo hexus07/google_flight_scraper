@@ -4,16 +4,14 @@ build-backend = "hatchling.build"
 
 [project]
 name = "google-flights"
-version = "0.0.4"
+version = "0.0.7"
 description = "Google Flights scraper (API) implemented in Python"
 keywords = ["flights", "google", "google-flights", "scraper", "protobuf", "travel", "trip", "passengers", "airport", "js"]
 authors = [
   { name = "Daniil", email = "daniilchuhai07@gmail.com" },
 ]
 license = "MIT"
-license-files = ["LICEN[CS]E*"]
 readme = "README.md"
-
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",

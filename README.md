@@ -3,22 +3,22 @@
 Fast flight data scraper from Google Flights which fetches and decodes flight information based on user's filters. Based on a Base64-encoded Protobuf URL string.
 
 ## Features
-- 🔎 **Search**: Searching for airport and airlines IATA codes (2-letter and 3-letter location code respectively)
 - 🏷️ **Filter Creation**: Define custom filters for flights ( departure/arrival airports, airlines, dates, trip type, passengers, seat type, and maximum stops)
-- ⚙️ **Data Fetching**: Fetch flight data from Google Flights using either JavaScript-based parsing or local HTML parsing.
+- ⚙️ **Data Fetching**: Fetch flight data from Google Flights for one-way or round-trip options.
 - 🔓 **Decoding**: Decode the fetched flight data into structured objects for easy processing.
+- 🏷️ **Creating Booking URL**: Booking URL for each itinerary which can be used directly. 
 
 
 ## Installation
 
 ```bash
-  pip install google-flight
+  pip install google-flights
 ```
 
 or if you want to run it local (with Playwright):
 
 ```bash
-  pip install google-flight[local]
+  pip install google-flights[local]
 ```
    
 ## Usage/Examples
@@ -32,7 +32,7 @@ from google_flights import create_filter, Passengers, FlightData, search_airline
 flight_filter = create_filter(
     flight_data=[
         FlightData(
-            airlines=search_airline("RyanAir"),  # Airline codes - "FR" and "RK" - can be passed as list ["FR","RK"]
+            airlines=['FR'],  # Airline codes - "FR" and "RK" - can be passed as list ["FR","RK"]
             date="2025-07-20",      # Date of departure
             from_airport=search_airport("Kaunas")  # Departure airport ["KUNs"]
             to_airport=["MAD"],  # Arrival airports
@@ -47,11 +47,11 @@ flight_filter = create_filter(
 
 2. Fetch Flight Data
 
-* Fetch flight data using the get_flights_from_filter
+* Fetch flight data using the get_one_way_options
 ```python
-from google_flights import get_flights_from_filter
+from google_flights import get_one_way_options
 
-flight_data = get_flights_from_filter(flight_filter, data_source='js', mode="common")
+flight_data = get_one_way_options(flight_filter, currency="UAH", language="uk", number_of_options=2)
 ```
 
 3. Result 
@@ -75,11 +75,14 @@ flight_data = get_flights_from_filter(flight_filter, data_source='js', mode="com
 
 🌱 CO₂ emissions (grams)
 
-💶 Price (EUR)
+💶 Price (EUR or other currency)
 
 🔄 Layovers (direct or stops)
 
 ✨ Features (Wi‑Fi, in‑seat power, video, media streaming, etc.)
+
+✈️ Booking URL
+
 ## Contributing
 
 I'll work with this project more in future, as I have plans for it. So contributions are always welcome!

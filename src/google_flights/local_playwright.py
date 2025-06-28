@@ -77,7 +77,6 @@ async def fetch_with_playwright(url: str) -> str:
 
 def local_playwright_fetch(params: dict) -> Any:
     url = "https://www.google.com/travel/flights?" + "&".join(f"{k}={v}" for k, v in params.items())
-    print(url)
     body = asyncio.run(fetch_with_playwright(url))
 
     class DummyResponse:

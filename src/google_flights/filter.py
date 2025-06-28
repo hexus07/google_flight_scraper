@@ -1,5 +1,5 @@
 from typing import Literal, List, Optional
-from flights_pb_implem import FlightData, Passengers, TFSData
+from google_flights.flights_pb_implem import FlightData, Passengers, TFSData
 
 def create_filter(
     *,
@@ -7,7 +7,7 @@ def create_filter(
     trip: Literal["round-trip", "one-way", "multi-city"],
     passengers: Passengers,
     seat: Literal["economy", "premium-economy", "business", "first"],
-    max_stops: Optional[int] = None,
+    max_stops: Optional[int] = 3,
 ) -> TFSData:
     """Create a filter. (``?tfs=``)
 
@@ -16,9 +16,10 @@ def create_filter(
         trip ("one-way" | "round-trip" | "multi-city"): Trip type.
         passengers (Passengers): Passengers.
         seat ("economy" | "premium-economy" | "business" | "first"): Seat.
-        max_stops (int, optional): Maximum number of stops. Defaults to None.
+        max_stops (int, optional): Maximum number of stops. Defaults to 2.
     """
-
+    
+    
     for fd in flight_data:
         fd.max_stops = max_stops
 

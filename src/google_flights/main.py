@@ -3,18 +3,15 @@
 from typing import List, Literal, Optional, Union, Dict
 from selectolax.lexbor import LexborHTMLParser, LexborNode
 
-from filter import TFSData
+from google_flights.filter import TFSData
 from primp import Client
 from datetime import datetime
 import copy
 
-from decoder import DecodedResult, ResultDecoder, Itinerary, ItinerarySummary, Flight # decoder of the response by kftang
+from google_flights.decoder import DecodedResult, ResultDecoder, Itinerary, ItinerarySummary, Flight # decoder of the response by kftang
 import re
 import json
-
-import time
 from itertools import chain
-import flights_pb_implem as PB  # Protobuf implementation for flight data
 
 DataSource = Literal['html', 'js']
 
@@ -26,10 +23,16 @@ def fetch_search(params: dict):
         'OTZ': '8053484_44_48_123900_44_436380',
         'NID': '8053484_44_48_123900_44_436380', # checked from the browser actual
     })
-    assert res.status_code == 200, f"{res.status_code} Result: {res.text_markdown}"
-    return res
 
-# Function to fetch booking data from given parameters (filter, language, currency) 
+    #print(res.url)
+
+    if res.status_code == 200:
+        return res
+    else:
+        print(RuntimeError(f"Failed to fetch data: {res.status_code} - {res.text}"))
+        return None
+
+# Function to fetch booking data from given parameters (filter, language, currency)
 def fetch_booking(params: dict):
     client = Client(impersonate="chrome_126", verify=False)
     res = client.get("https://www.google.com/travel/flights/booking", params=params, cookies={
@@ -37,8 +40,24 @@ def fetch_booking(params: dict):
         'OTZ': '8053484_44_48_123900_44_436380',
         'NID': '8053484_44_48_123900_44_436380', # checked from the browser actual
     })
-    assert res.status_code == 200, f"{res.status_code} Result: {res.text_markdown}"
-    return res
+
+    if res.status_code == 200:
+        return res
+    else:
+        print(RuntimeError(f"Failed to fetch data: {res.status_code} - {res.text}"))
+        return None
+
+# Function to fetch booking data from given parameters (filter, language, currency)
+def fetch_booking(params: dict):
+    client = Client(impersonate="chrome_126", verify=False)
+    res = client.get("https://www.google.com/travel/flights/booking", params=params, cookies={
+        'SOCS': 'CAISNQgjEitib3FfaWRlbnRpdHlmcm9udGVuZHVpc2VydmVyXzIwMjUwNDIzLjA0X3AwGgJ1ayACGgYIgP6lwAY',
+        'OTZ': '8053484_44_48_123900_44_436380',
+        'NID': '8053484_44_48_123900_44_436380', # checked from the browser actual
+    })
+    if res.status_code == 200:
+        return res
+    return None
 
 
 # Function to parse the response and extract flight data from filter
@@ -66,7 +85,7 @@ def get_flights_from_filter(
             print(f"Error fetching data: {e}")
             res = local_playwright_fetch(params)
     else: # Local mode for testing 
-        from local_playwright import local_playwright_fetch
+        from google_flights.local_playwright import local_playwright_fetch
         res = local_playwright_fetch(params)
 
     try:
@@ -80,6 +99,7 @@ def get_booking_url(
         currency: str = "EUR",
         language: str = "en-GB"
 ) -> str: 
+
     """
     Function to get the booking URL for a flight based on the filter data (one-way/round-trip).
     """
@@ -106,6 +126,7 @@ def get_round_trip_options(
         base_filter: TFSData,
         currency: str = "EUR",
         language: str = "en-GB",
+        number_of_options: int = 3 # Number of options to return, default is 3
 ) -> List[Dict]:
     """
     Function to get round-trip flight options based on the base filter.
@@ -113,6 +134,15 @@ def get_round_trip_options(
     Returns a list of dictionaries containing departure and return itinerary, and the booking URL.
     """
 
+    if base_filter.trip != 1: # 1 for round-trip
+        raise ValueError(
+            "Base filter must be for a round-trip flight."
+        )
+    
+    if len(base_filter.flight_data) != 2:
+        raise ValueError(
+            "Base filter must contain exactly two flight data entries for round-trip."
+        )
     options = []
     outbound_res = get_flights_from_filter(base_filter, currency=currency, language=language)
 
@@ -121,7 +151,7 @@ def get_round_trip_options(
             "No outbound flights found"
         )
 
-    for outbound in chain(outbound_res.best or outbound_res.other[:3]):
+    for outbound in chain(outbound_res.best or outbound_res.other[:number_of_options]):
         # 1) Create a copy of the base filter for return flight and update it with itinerary
         return_filter = copy.deepcopy(base_filter)  # Create a copy of the base filter for return flight
         return_filter.flight_data[0].itin_data = []
@@ -179,6 +209,7 @@ def get_one_way_options(
         base_filter: TFSData,
         currency: str = "EUR",
         language: str = "en-GB",
+        number_of_options: int = 3  # Number of options to return, default is 3
 ) -> List[Dict]:
     """
     Function to get one-way flight options based on the base filter.
@@ -186,15 +217,27 @@ def get_one_way_options(
     Returns a list of dictionaries containing the itinerary and the booking URL.
     """
 
+    if base_filter.trip != 2:  # 2 for one-way
+        raise ValueError(
+            "Base filter must be for a one-way flight."
+        )
+
+    if len(base_filter.flight_data) != 1:
+        raise ValueError(
+            "Base filter must contain exactly one flight data entry for one-way."
+        )
+
     options = []
 
     one_way_res = get_flights_from_filter(base_filter, currency=currency, language=language)
-    if one_way_res.other == [] and one_way_res.best == []:
+
+
+    if one_way_res.other is None and one_way_res.best is None:
         raise ValueError(
             "No one-way flights found"
         )
     
-    for outbound in chain(one_way_res.best or one_way_res.other[:3]):
+    for outbound in chain(one_way_res.best or one_way_res.other[:number_of_options]):
         # 1) Create a copy of the base filter and update it with itinerary
         flight_filter = copy.deepcopy(base_filter)
         flight_filter.flight_data[0].itin_data  = []
@@ -208,7 +251,6 @@ def get_one_way_options(
                 "flight_code":       leg.airline,
                 "flight_number":     leg.flight_number,
             })
-
 
         options.append({
             "flight": outbound,

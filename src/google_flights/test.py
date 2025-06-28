@@ -1,68 +1,48 @@
 from filter import create_filter
 from flights_pb_implem import FlightData, Passengers, TFSData
-from main import get_flights_from_filter, get_booking_url, get_round_trip_options, get_one_way_options
-from search import search_airline, search_airport
-from decoder import DecodedResult
+from main import get_one_way_options, get_round_trip_options, get_booking_url
 
-itinerary1 = {
-    "departure_airport": "ORY",
-    "departure_date": "2025-07-20",
-    "arrival_airport": "MAD",
-    "flight_code": "UX",
-    "flight_number": "1028"
-}
+# 1) One-way, direct only, economy, specific airline (UX), single adult
+flight_filter_round = create_filter(
+    flight_data=[
+        FlightData(
+            date="2025-08-01",
+            from_airport=["MAD"],
+            to_airport=["BCN"],
+        ),          
+            FlightData(           
+            date="2025-08-09",
+            from_airport=["BCN"],
+            to_airport=["MAD"],
+        ),
+    ],
+    trip="round-trip",
+    passengers=Passengers(adults=1, children=0, infants_in_seat=0, infants_on_lap=0),
+    seat="economy",
+)
 
-
-itinerary2 = {
-    "departure_airport": "MAD",
-    "departure_date": "2025-07-25",
-    "arrival_airport": "ORY",
-    "flight_code": "UX",
-    "flight_number": "1029"
-}
-
-departure_date = [2025, 7, 20]  # Departure date: 2025-07-20
-
-print(f"{departure_date[0]}-{departure_date[1]:02d}-{departure_date[2]:02d}")
-
-flight_filter = create_filter(flight_data = [
-            FlightData(
-                airlines= []  ,  # Airline code (optional)
-                date="2025-07-20",  # Date of departure
-                from_airport=["VNO"],  # Departure airport
-                to_airport=["MAD"],  # Itinerary data (optional)
-                #itin_dataitinerary1=,  # Itinerary data (optional)
-            ), FlightData(
-                airlines= []  ,  # Airline code (optional)
-                date="2025-07-25",  # Date of departure
-                from_airport=["MAD"],  # Departure airport
-                to_airport=["VNO"],
-                #itin_data=itinerary2,  # Itinerary data (optional)
-            )
-        ],
-        trip="round-trip",  # Trip type
-        passengers=Passengers(adults=2, children=1, infants_in_seat=0, infants_on_lap=0),  # Passengers
-        seat="economy",  # Seat type
-        max_stops=1,  # Maximum number of stops
-    )
+for option in get_round_trip_options(flight_filter_round, number_of_options=1, currency="UAH", language="ru-UA"):
+    print(option)
+    print('\n')
 
 
-flight_filter1 = create_filter(flight_data = [
-            FlightData(
-                airlines= []  ,  # Airline code (optional)
-                date="2025-07-20",  # Date of departure
-                from_airport=["VNO"],  # Departure airport
-                to_airport=["MAD"],  # Itinerary data (optional)
-                #itin_dataitinerary1=,  # Itinerary data (optional)
-            )],
-        trip="one-way",  # Trip type
-        passengers=Passengers(adults=1, children=0, infants_in_seat=0, infants_on_lap=0),  # Passengers
-        seat="economy",  # Seat type
-        max_stops=1,  # Maximum number of stops
-    )
+flight_filter_one_way = create_filter(
+    flight_data=[
+        FlightData(
+            date="2025-08-01",
+            from_airport=["MAD"],
+            to_airport=["BCN"],
+        ),          
+    ],
+    trip="one-way",
+    passengers=Passengers(adults=2, children=1, infants_in_seat=0, infants_on_lap=0),
+    seat="economy",
+    max_stops=0,  # Direct flights only
+)
 
-# Get flights from the filter
-one_way_flights = get_one_way_options(flight_filter1)
+for option in get_one_way_options(flight_filter_one_way):
+    print(option)
+    print('\n')
 
-for flight in one_way_flights:
-    print(flight.get("url"))
+
+

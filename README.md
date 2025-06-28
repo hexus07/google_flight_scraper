@@ -1,6 +1,11 @@
 # Google Flights Scraper ✈️
-
+<div align="center">
+  
 Fast flight data scraper from Google Flights which fetches and decodes flight information based on user's filters. Based on a Base64-encoded Protobuf URL string.
+
+ [Issues](https://github.com/hexus07/google_flight_scraper/issues) • [PyPi](https://pypi.org/project/google-flights/)
+
+</div>
 
 ## Features
 - 🏷️ **Filter Creation**: Define custom filters for flights ( departure/arrival airports, airlines, dates, trip type, passengers, seat type, and maximum stops)
@@ -15,7 +20,7 @@ Fast flight data scraper from Google Flights which fetches and decodes flight in
   pip install google-flights
 ```
 
-or if you want to run it local (with Playwright):
+or if you want to run it locally (with Playwright):
 
 ```bash
   pip install google-flights[local]

@@ -1,6 +1,6 @@
 import base64
 from typing import Any, List, Optional, TYPE_CHECKING, Literal, Union # for better readability and maintainability
-import google_flights.flights_pb2 as PB
+import flights_pb2 as PB
 from dataclasses import dataclass
 
 class FlightData:

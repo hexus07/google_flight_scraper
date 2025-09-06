@@ -1,3 +1,8 @@
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+
+
 from typing import Literal, List, Optional
 from google_flights.flights_pb_implem import FlightData, Passengers, TFSData
 

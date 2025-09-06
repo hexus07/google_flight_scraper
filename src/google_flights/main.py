@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
 # Importing necessary libraries
+
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+
+
 from typing import List, Literal, Optional, Union, Dict
 from selectolax.lexbor import LexborHTMLParser, LexborNode
 
@@ -11,7 +17,7 @@ import copy
 from google_flights.decoder import DecodedResult, ResultDecoder, Itinerary, ItinerarySummary, Flight # decoder of the response by kftang
 import re
 import json
-from itertools import chain
+from itertools import chain, islice
 
 DataSource = Literal['html', 'js']
 
@@ -22,9 +28,10 @@ def fetch_search(params: dict):
         'SOCS': 'CAISNQgjEitib3FfaWRlbnRpdHlmcm9udGVuZHVpc2VydmVyXzIwMjUwNDIzLjA0X3AwGgJ1ayACGgYIgP6lwAY',
         'OTZ': '8053484_44_48_123900_44_436380',
         'NID': '8053484_44_48_123900_44_436380', # checked from the browser actual
-    })
+    },
+    timeout=15)
 
-    #print(res.url)
+    print(res.url)
 
     if res.status_code == 200:
         return res
@@ -63,20 +70,30 @@ def fetch_booking(params: dict):
 # Function to parse the response and extract flight data from filter
 def get_flights_from_filter(
         filter: TFSData,
-        currency: str = "EUR",
+        currency: Literal['EUR'] = "EUR",
         language: str = "en-GB",
+        sort: Literal["top_flight", "price", "departure_time", "duration"] = "price",
         *,
         data_source: DataSource = "js",
         mode: Literal["common", "local"] = "common",
 ) -> Union[DecodedResult, None]: 
     data = filter.as_b64() # Encoding filter data to base64
 
+
+    sort_parameter = {
+        "top_flight": "EgQIARABIgA",
+        "price": "EgQIAhABIgA",
+        "departure_time": "EgQIAxABIgA",
+        "duration": "EgQIBRABIgA",
+    }
+    
     params = {
         "tfs": data.decode("utf-8"), # Decoding the base64 data
         "hl": language, # For 24-hour format
-        "tfu": "EgQIABABIgA",
+        "tfu": sort_parameter.get(sort, "EgQIAhABIgA"), # Sorting parameter
         "curr": currency,
     } 
+
 
     if mode == 'common':
         try:
@@ -97,6 +114,7 @@ def get_flights_from_filter(
 def get_booking_url(
         flight_filter: TFSData,
         currency: str = "EUR",
+        sort: Literal["top_flight", "price", "departure_time", "duration"] = "price",
         language: str = "en-GB"
 ) -> str: 
 
@@ -106,12 +124,20 @@ def get_booking_url(
 
     data = flight_filter.as_b64() # Encoding filter data to base64
 
+    sort_parameter = {
+        "top_flight": "EgQIARABIgA",
+        "price": "EgQIAhABIgA",
+        "departure_time": "EgQIAxABIgA",
+        "duration": "EgQIBRABIgA",
+    }
+    
     params = {
         "tfs": data.decode("utf-8"), # Decoding the base64 data
         "hl": language, # For 24-hour format
-        "tfu": "EgQIABABIgA",
+        "tfu": sort_parameter.get(sort, "EgQIAhABIgA"), # Sorting parameter
         "curr": currency,
-    }
+    } 
+
     if all(fd.itin_data for fd in flight_filter.flight_data):
         # If all flight data is present, fetch booking URL
         url = fetch_booking(params).url
@@ -126,6 +152,7 @@ def get_round_trip_options(
         base_filter: TFSData,
         currency: str = "EUR",
         language: str = "en-GB",
+        sort: Literal["top_flight", "price", "departure_time", "duration"] = "price",
         number_of_options: int = 3 # Number of options to return, default is 3
 ) -> List[Dict]:
     """
@@ -144,14 +171,14 @@ def get_round_trip_options(
             "Base filter must contain exactly two flight data entries for round-trip."
         )
     options = []
-    outbound_res = get_flights_from_filter(base_filter, currency=currency, language=language)
+    outbound_res = get_flights_from_filter(base_filter, currency=currency, language=language, sort=sort)
 
     if outbound_res.other is None and outbound_res.best is None:
         raise ValueError(
             "No outbound flights found"
         )
 
-    for outbound in chain(outbound_res.best or outbound_res.other[:number_of_options]):
+    for outbound in islice(chain(outbound_res.best or outbound_res.other), number_of_options):
         # 1) Create a copy of the base filter for return flight and update it with itinerary
         return_filter = copy.deepcopy(base_filter)  # Create a copy of the base filter for return flight
         return_filter.flight_data[0].itin_data = []
@@ -203,12 +230,18 @@ def get_round_trip_options(
             "url": url
         })
 
-    return options
+    
+    price_series = outbound_res.price_series
+    if price_series:
+        return options, price_series
+    return options, None
+
 
 def get_one_way_options(
         base_filter: TFSData,
         currency: str = "EUR",
         language: str = "en-GB",
+        sort: Literal["top_flight", "price", "departure_time", "duration"] = "price",
         number_of_options: int = 3  # Number of options to return, default is 3
 ) -> List[Dict]:
     """
@@ -229,15 +262,14 @@ def get_one_way_options(
 
     options = []
 
-    one_way_res = get_flights_from_filter(base_filter, currency=currency, language=language)
-
+    one_way_res = get_flights_from_filter(base_filter, currency=currency, language=language, sort=sort)
 
     if one_way_res.other is None and one_way_res.best is None:
         raise ValueError(
             "No one-way flights found"
         )
-    
-    for outbound in chain(one_way_res.best or one_way_res.other[:number_of_options]):
+    # Iterate through the best and other flight options, limited by number_of_options
+    for outbound in islice(chain(one_way_res.best or one_way_res.other[:number_of_options]), number_of_options):
         # 1) Create a copy of the base filter and update it with itinerary
         flight_filter = copy.deepcopy(base_filter)
         flight_filter.flight_data[0].itin_data  = []
@@ -254,10 +286,14 @@ def get_one_way_options(
 
         options.append({
             "flight": outbound,
-            "url": get_booking_url(flight_filter, currency=currency, language=language)
+            "url": get_booking_url(flight_filter, currency=currency, language=language, sort=sort)
         })
 
-    return options
+    price_series = one_way_res.price_series
+    if price_series:
+        return options, price_series
+    return options, None
+
 
 def parse_response(
     r,

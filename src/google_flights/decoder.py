@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Any, List, Generic, Optional, Sequence, TypeVar, Union, Tuple, Dict
 from typing_extensions import TypeAlias, override
 from enum import Enum
-from google_flights.flights_pb_implem import ItinerarySummary
+from flights_pb_implem import ItinerarySummary
 
 DecodePath: TypeAlias = List[int]
 NLBaseType: TypeAlias = Union[int, str, None, Sequence['NLBaseType']]
@@ -68,6 +68,7 @@ class DecoderKey(Generic[V]):
 
     def decode(self, root: NLData) -> Union[NLBaseType, V]:        
         try:
+            walk(root.data)
             data = root[self.decode_path]
         except AssertionError as e:
             print(f"Error decoding path {self.decode_path}: {e} - is not present in the data")
@@ -157,14 +158,18 @@ class Itinerary:
     arrival_time: Tuple[int, int]
     itinerary_summary: ItinerarySummary
 
+
+@dataclass
+class PricePoint:
+    timestamp: int
+    price: int
+
 @dataclass
 class DecodedResult:
     # raw unparsed data
-    raw: list
-
     best: List[Itinerary]
     other: List[Itinerary]
-
+    price_series: List[PricePoint]
     # airport_details: Any
     # unknown_1: Any
 
@@ -257,7 +262,19 @@ class ItineraryDecoder(Decoder):
     @override
     def decode(cls, root: Union[list, NLData]) -> List[Itinerary]:
         return [Itinerary(**cls.decode_el(NLData(el))) for el in root]
+    
 
+class PriceSeriesDecoder(Decoder):
+    
+    SERIES: DecoderKey[List[PricePoint]] = DecoderKey(
+        [],
+        lambda nl: [PricePoint(ts, val) for ts, val in nl.data]
+    )
+
+    @classmethod
+    @override
+    def decode(cls, root: Union[list, NLData]) -> List[PricePoint]:
+        return cls.SERIES.decode(NLData(root))
 
 class ResultDecoder(Decoder):
     BEST: DecoderKey[Optional[List[Itinerary]]] = DecoderKey(
@@ -265,6 +282,8 @@ class ResultDecoder(Decoder):
         ItineraryDecoder.decode)
 
     OTHER: DecoderKey[List[Itinerary]] = DecoderKey([3, 0], ItineraryDecoder.decode)
+
+    PRICE_SERIES: DecoderKey[List[PricePoint]] = DecoderKey([5, 10, 0], PriceSeriesDecoder.decode)
 
     @classmethod
     @override
@@ -276,5 +295,20 @@ class ResultDecoder(Decoder):
         return DecodedResult(
             best=decoded_data.get("best", []),  # Default to an empty list if BEST is missing
             other=decoded_data.get("other", []),  # Default to an empty list if OTHER is missing
-            raw=root
+            price_series=decoded_data.get("price_series", []),  # Default to an empty list if PRICE_SERIES is missing
         )
+
+
+def walk(obj, path=None):
+    if path is None:
+        path = []
+    if isinstance(obj, list):
+        if all(isinstance(x, list) and len(x) == 2 and all(isinstance(i, int) for i in x) for x in obj):
+            if len(obj) > 10:
+                print("Candidate price series at path:", path, "length:", len(obj))
+
+        for i, v in enumerate(obj):
+            walk(v, path + [i])
+    elif isinstance(obj, dict):
+        for k, v in obj.items():
+            walk(v, path + [k])

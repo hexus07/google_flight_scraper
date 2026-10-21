@@ -2,7 +2,7 @@
 <div align="center">
   
 Fast flight data scraper from Google Flights which fetches and decodes flight information based on user's filters. Based on a Base64-encoded Protobuf URL string.
-
+Used in: [[flight price prediction]](https://github.com/hexus07/flight-price-prediction)
  [Issues](https://github.com/hexus07/google_flight_scraper/issues) • [PyPi](https://pypi.org/project/google-flights/)
 
 </div>
